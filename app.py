@@ -16,13 +16,29 @@ st.markdown("""
 @st.cache_data
 def load_data():
     data = pd.read_csv("data/destinations.csv")
-    required = {"country", "region", "latitude", "longitude", "benchmark_rank", "arrivals_2019_m", "flight_index", "weather_index", "crowd_index"}
+    required = {"country", "region", "latitude", "longitude", "benchmark_rank", "arrivals_2019_m", "flight_index", "hotel_index", "weather_index", "crowd_index"}
     missing = required.difference(data.columns)
     if missing:
         raise ValueError(f"Dataset is missing required columns: {sorted(missing)}")
     return data
 
+
+def build_monthly_dataset(data):
+    frames = []
+    for _, r in data.iterrows():
+        s = seasonal_table(r["region"], r["flight_index"], r["crowd_index"], r["weather_index"])
+        s["country"] = r["country"]
+        s["region"] = r["region"]
+        s["latitude"] = r["latitude"]
+        s["longitude"] = r["longitude"]
+        s["benchmark_rank"] = r["benchmark_rank"]
+        s["arrivals_2019_m"] = r["arrivals_2019_m"]
+        frames.append(s)
+    return pd.concat(frames, ignore_index=True)
+
+
 df = load_data()
+monthly = build_monthly_dataset(df)
 
 st.markdown('<div class="hero"><h1>🌍 TRAVEL 4D</h1><p>Global Tourism Intelligence — destination seasonality, cost pressure, weather and travel value.</p><p class="small">Decision-support platform • Transparent benchmark + derived intelligence model</p></div>', unsafe_allow_html=True)
 
@@ -61,6 +77,43 @@ fig.update_yaxes(range=[0, 100])
 fig.update_layout(height=410, legend_title_text="")
 st.plotly_chart(fig, use_container_width=True)
 
+st.subheader("⏳ 4D Temporal Globe")
+st.caption("Move through the year to see how destination value, weather and tourism pressure change over time. This is the core temporal dimension of TRAVEL 4D.")
+
+globe_df = monthly.copy()
+globe_df["value_score"] = globe_df["value_score"].round(1)
+globe_df["month_order"] = globe_df["month"].map({m: i for i, m in enumerate(MONTHS, start=1)})
+globe_df = globe_df.sort_values(["month_order", "benchmark_rank"])
+fig_4d = px.scatter_geo(
+    globe_df,
+    lat="latitude",
+    lon="longitude",
+    animation_frame="month",
+    animation_group="country",
+    size="arrivals_2019_m",
+    color="value_score",
+    color_continuous_scale="Viridis",
+    hover_name="country",
+    hover_data={
+        "value_score": True,
+        "weather_score": True,
+        "crowd_score": True,
+        "flight_index": True,
+        "hotel_index": True,
+        "arrivals_2019_m": True,
+        "latitude": False,
+        "longitude": False,
+        "month_order": False,
+    },
+    projection="orthographic",
+    range_color=[0, 100],
+    title="Global Travel Value by Month",
+)
+fig_4d.update_layout(height=650, margin=dict(l=0, r=0, t=50, b=0))
+fig_4d.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 700
+fig_4d.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 300
+st.plotly_chart(fig_4d, use_container_width=True)
+
 left, right = st.columns([1.35, 1])
 with left:
     st.subheader("🌍 Global Destination Explorer")
@@ -85,21 +138,25 @@ with comp2:
     country_b = st.selectbox("Destination B", comp_options, index=default_b, key="compare_b")
 
 comparison_rows = []
+for metric_name in ["Tourism rank", "Travel Value", "Weather", "Crowd pressure", "Flight index", "Hotel index"]:
+    comparison_rows.append({"Metric": metric_name})
+
 for country in [country_a, country_b]:
     r = df[df["country"] == country].iloc[0]
     s = seasonal_table(r["region"], r["flight_index"], r["crowd_index"], r["weather_index"])
     m = s[s["month"] == month].iloc[0]
-    comparison_rows.append({"Metric": "Tourism rank", country: int(r["benchmark_rank"]) if country == country_a else None})
-    comparison_rows.append({"Metric": "Travel Value", country: round(m["value_score"], 1)})
-    comparison_rows.append({"Metric": "Weather", country: round(m["weather_score"], 1)})
-    comparison_rows.append({"Metric": "Crowd pressure", country: round(m["crowd_score"], 1)})
-    comparison_rows.append({"Metric": "Flight index", country: round(m["flight_index"], 1)})
-    comparison_rows.append({"Metric": "Hotel index", country: round(m["hotel_index"], 1)})
+    values = {
+        "Tourism rank": int(r["benchmark_rank"]),
+        "Travel Value": round(m["value_score"], 1),
+        "Weather": round(m["weather_score"], 1),
+        "Crowd pressure": round(m["crowd_score"], 1),
+        "Flight index": round(m["flight_index"], 1),
+        "Hotel index": round(m["hotel_index"], 1),
+    }
+    for item in comparison_rows:
+        item[country] = values[item["Metric"]]
 
-comparison = pd.DataFrame(comparison_rows).groupby("Metric", as_index=False).first()
-for country in [country_a, country_b]:
-    if country not in comparison.columns:
-        comparison[country] = None
+comparison = pd.DataFrame(comparison_rows)
 st.dataframe(comparison[["Metric", country_a, country_b]], hide_index=True, use_container_width=True)
 
 st.subheader("🧠 Smart Trip Finder")
@@ -137,6 +194,8 @@ with st.expander("📚 Methodology & Data Provenance"):
 **Seasonal intelligence:** Monthly flight, hotel, crowd and weather values are derived baseline indices for a transparent prototype. They are not live airfare/hotel quotes or official statistics.
 
 **Travel Value Score:** 25% flight affordability + 20% hotel affordability + 30% weather suitability + 25% crowd avoidance.
+
+**4D model:** Destination + time (month) + multi-factor travel conditions + derived Travel Value. The animated globe visualizes the time dimension without requiring a heavy external mapping service.
 
 **Production path:** replace baseline indices with sourced monthly observations and optional live pricing feeds without changing the scoring interface.
     """)
