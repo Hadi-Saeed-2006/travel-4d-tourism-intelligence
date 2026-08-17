@@ -1,0 +1,21 @@
+country,iso3,region,latitude,longitude,arrivals_2019_m,benchmark_rank,flight_index,hotel_index,daily_cost_index,weather_index,crowd_index
+France,FRA,Europe,46.2276,2.2137,217.877,1,70,72,68,82,88
+United States,USA,North America,37.0902,-95.7129,165.478,2,82,86,84,78,76
+China,CHN,Asia,35.8617,104.1954,162.538,3,78,74,62,80,72
+Spain,ESP,Europe,40.4637,-3.7492,126.170,4,68,70,66,88,92
+Mexico,MEX,North America,23.6345,-102.5528,97.406,5,72,68,55,86,82
+Italy,ITA,Europe,41.8719,12.5674,95.399,6,69,73,67,87,91
+Poland,POL,Europe,51.9194,19.1451,88.515,7,65,62,52,78,70
+Hungary,HUN,Europe,47.1625,19.5033,61.397,8,63,60,50,80,72
+Croatia,HRV,Europe,45.1000,15.2000,60.021,9,67,68,61,86,89
+Türkiye,TUR,Europe,38.9637,35.2433,51.747,10,64,65,55,85,84
+United Kingdom,GBR,Europe,55.3781,-3.4360,40.857,11,74,78,75,76,83
+Thailand,THA,Asia,15.8700,100.9925,39.916,12,76,70,48,88,86
+Germany,DEU,Europe,51.1657,10.4515,39.563,13,67,69,64,79,78
+Czechia,CZE,Europe,49.8175,15.4730,37.202,14,64,63,54,79,76
+Greece,GRC,Europe,39.0742,21.8243,34.005,15,66,68,60,90,90
+Denmark,DNK,Europe,56.2639,9.5018,33.093,16,70,74,72,75,73
+Canada,CAN,North America,56.1304,-106.3468,32.430,17,79,78,76,72,68
+Austria,AUT,Europe,47.5162,14.5501,31.884,18,65,68,64,82,80
+Japan,JPN,Asia,36.2048,138.2529,31.881,19,75,73,70,84,78
+Portugal,PRT,Europe,39.3999,-8.2245,24.638,20,67,66,59,89,87
