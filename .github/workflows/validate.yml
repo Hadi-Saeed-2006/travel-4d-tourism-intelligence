@@ -1,0 +1,43 @@
+name: Validate TRAVEL 4D
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Compile Python files
+        run: python -m compileall app.py src
+
+      - name: Validate dataset
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          df = pd.read_csv("data/destinations.csv")
+          required = {
+              "country", "region", "latitude", "longitude",
+              "benchmark_rank", "arrivals_2019_m",
+              "flight_index", "weather_index", "crowd_index"
+          }
+          missing = required - set(df.columns)
+          assert not missing, f"Missing columns: {sorted(missing)}"
+          assert len(df) >= 30, f"Expected at least 30 destinations, found {len(df)}"
+          assert df["country"].is_unique, "Country names must be unique"
+          assert df["benchmark_rank"].notna().all(), "Missing benchmark ranks"
+          print(f"Dataset validation passed: {len(df)} destinations")
+          PY
